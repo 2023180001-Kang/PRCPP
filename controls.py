@@ -15,3 +15,14 @@ class Controls:
             self.pressed.add(event.key)
         elif event.type == p.SDL_KEYUP:
             self.pressed.discard(event.key)
+
+    @property
+    def direction(self):
+        return (
+            int(p.SDLK_RIGHT in self.pressed) - int(p.SDLK_LEFT in self.pressed),
+            int(p.SDLK_UP in self.pressed) - int(p.SDLK_DOWN in self.pressed),
+        )
+
+    @property
+    def running(self):
+        return p.SDLK_r in self.pressed
