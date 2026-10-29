@@ -10,6 +10,7 @@ DRAW_HEIGHT = 128
 STATE_ROWS = {"IDLE": 0, "WALK": 1, "RUN": 2}
 ANIMATION_FPS = {"IDLE": 6, "WALK": 10, "RUN": 14}
 WALK_SPEED = 160
+RUN_SPEED = 320
 
 
 @dataclass
@@ -20,7 +21,7 @@ class Character:
     facing_right: bool = True
     animation_time: float = 0.0
 
-    def update(self, dt, direction=(0, 0)):
+    def update(self, dt, direction=(0, 0), running=False):
         dx, dy = direction
         next_state = "WALK" if dx or dy else "IDLE"
         if next_state != self.state:
@@ -28,8 +29,9 @@ class Character:
             self.animation_time = 0.0
         else:
             self.animation_time += dt
-        self.x += dx * WALK_SPEED * dt
-        self.y += dy * WALK_SPEED * dt
+        speed = RUN_SPEED if running else WALK_SPEED
+        self.x += dx * speed * dt
+        self.y += dy * speed * dt
 
     @property
     def frame(self):

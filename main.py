@@ -36,7 +36,7 @@ def main():
                     running = False
             if not running:
                 break
-            character.update(dt, controls.direction)
+            character.update(dt, controls.direction, controls.running)
             p.clear_canvas()
             background.draw(
                 WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2,
