@@ -42,8 +42,9 @@ def main():
                 WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2,
                 background.w * background_scale, background.h * background_scale,
             )
-            sprite.clip_draw(
-                *character.source_rect, character.x, character.y, DRAW_WIDTH, DRAW_HEIGHT,
+            sprite.clip_composite_draw(
+                *character.source_rect, 0, "" if character.facing_right else "h",
+                character.x, character.y, DRAW_WIDTH, DRAW_HEIGHT,
             )
             p.update_canvas()
             sleep(max(0, 1 / TARGET_FPS - (perf_counter() - frame_start)))

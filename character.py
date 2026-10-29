@@ -23,6 +23,8 @@ class Character:
 
     def update(self, dt, direction=(0, 0), running=False):
         dx, dy = direction
+        if dx:
+            self.facing_right = dx > 0
         if not (dx or dy):
             next_state = "IDLE"
         else:
