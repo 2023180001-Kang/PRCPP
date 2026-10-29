@@ -37,6 +37,7 @@ def main():
             if not running:
                 break
             character.update(dt, controls.direction, controls.running)
+            character.constrain(WINDOW_WIDTH, WINDOW_HEIGHT)
             p.clear_canvas()
             background.draw(
                 WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2,

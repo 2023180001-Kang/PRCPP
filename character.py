@@ -42,6 +42,10 @@ class Character:
         self.x += dx * speed * dt
         self.y += dy * speed * dt
 
+    def constrain(self, width, height):
+        self.x = max(DRAW_WIDTH / 2, min(self.x, width - DRAW_WIDTH / 2))
+        self.y = max(DRAW_HEIGHT / 2, min(self.y, height - DRAW_HEIGHT / 2))
+
     @property
     def frame(self):
         return int(self.animation_time * ANIMATION_FPS[self.state]) % FRAME_COUNT
