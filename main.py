@@ -1,9 +1,12 @@
 from time import perf_counter, sleep
 from pathlib import Path
+import sys
 
 import pico2d as p
 
-from character import Character, DRAW_HEIGHT, DRAW_WIDTH
+from character import (
+    Character, DRAW_HEIGHT, DRAW_WIDTH, FRAME_COUNT, FRAME_HEIGHT, FRAME_WIDTH, STATE_ROWS,
+)
 from controls import Controls
 
 
@@ -13,12 +16,29 @@ TARGET_FPS = 60
 ASSET_DIR = Path(__file__).resolve().parent
 
 
+def load_asset(name):
+    path = ASSET_DIR / name
+    if not path.is_file():
+        raise OSError(f"Missing resource: {path}")
+    try:
+        return p.load_image(str(path))
+    except OSError as error:
+        raise OSError(f"Cannot load resource: {path}") from error
+
+
 def main():
     p.open_canvas(WINDOW_WIDTH, WINDOW_HEIGHT)
+    background = sprite = None
     try:
         p.hide_lattice()
-        background = p.load_image(str(ASSET_DIR / "arena.png"))
-        sprite = p.load_image(str(ASSET_DIR / "tino_sprite_pico2d.png"))
+        background = load_asset("arena.png")
+        sprite = load_asset("tino_sprite_pico2d.png")
+        expected_size = (FRAME_WIDTH * FRAME_COUNT, FRAME_HEIGHT * len(STATE_ROWS))
+        if (sprite.w, sprite.h) != expected_size:
+            raise ValueError(
+                f"Invalid sprite size: {ASSET_DIR / 'tino_sprite_pico2d.png'}; "
+                f"expected {expected_size}, got {(sprite.w, sprite.h)}"
+            )
         background_scale = min(WINDOW_WIDTH / background.w, WINDOW_HEIGHT / background.h)
         character = Character(WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2)
         controls = Controls()
@@ -51,9 +71,15 @@ def main():
             )
             p.update_canvas()
             sleep(max(0, 1 / TARGET_FPS - (perf_counter() - frame_start)))
+    except (OSError, ValueError) as error:
+        print(error, file=sys.stderr)
+        return 1
     finally:
+        # Image destructors must run while their SDL renderer still exists.
+        background = sprite = None
         p.close_canvas()
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())
