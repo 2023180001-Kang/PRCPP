@@ -4,6 +4,7 @@ from pathlib import Path
 import pico2d as p
 
 from character import Character, DRAW_HEIGHT, DRAW_WIDTH
+from controls import Controls
 
 
 WINDOW_WIDTH = 1280
@@ -20,6 +21,7 @@ def main():
         sprite = p.load_image(str(ASSET_DIR / "tino_sprite_pico2d.png"))
         background_scale = min(WINDOW_WIDTH / background.w, WINDOW_HEIGHT / background.h)
         character = Character(WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2)
+        controls = Controls()
         running = True
         previous_time = perf_counter()
         while running:
@@ -27,6 +29,7 @@ def main():
             dt = frame_start - previous_time
             previous_time = frame_start
             for event in p.get_events():
+                controls.handle_event(event)
                 if event.type == p.SDL_QUIT:
                     running = False
                 elif event.type == p.SDL_KEYDOWN and event.key == p.SDLK_ESCAPE:
