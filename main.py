@@ -3,6 +3,8 @@ from pathlib import Path
 
 import pico2d as p
 
+from character import Character
+
 
 WINDOW_WIDTH = 1280
 WINDOW_HEIGHT = 720
@@ -16,6 +18,7 @@ def main():
         p.hide_lattice()
         background = p.load_image(str(ASSET_DIR / "arena.png"))
         background_scale = min(WINDOW_WIDTH / background.w, WINDOW_HEIGHT / background.h)
+        character = Character(WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2)
         running = True
         previous_time = perf_counter()
         while running:
