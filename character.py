@@ -19,6 +19,9 @@ class Character:
     facing_right: bool = True
     animation_time: float = 0.0
 
+    def update(self, dt):
+        self.animation_time += dt
+
     @property
     def frame(self):
         return int(self.animation_time * ANIMATION_FPS[self.state]) % FRAME_COUNT

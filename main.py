@@ -33,6 +33,7 @@ def main():
                     running = False
             if not running:
                 break
+            character.update(dt)
             p.clear_canvas()
             background.draw(
                 WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2,
