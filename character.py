@@ -9,6 +9,7 @@ DRAW_HEIGHT = 128
 # pico2d clip coordinates start at the bottom of the image.
 STATE_ROWS = {"IDLE": 0, "WALK": 1, "RUN": 2}
 ANIMATION_FPS = {"IDLE": 6, "WALK": 10, "RUN": 14}
+WALK_SPEED = 160
 
 
 @dataclass
@@ -19,7 +20,10 @@ class Character:
     facing_right: bool = True
     animation_time: float = 0.0
 
-    def update(self, dt):
+    def update(self, dt, direction=(0, 0)):
+        dx, dy = direction
+        self.x += dx * WALK_SPEED * dt
+        self.y += dy * WALK_SPEED * dt
         self.animation_time += dt
 
     @property
