@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from math import hypot
 
 
 FRAME_WIDTH = 128
@@ -34,6 +35,9 @@ class Character:
             self.animation_time = 0.0
         else:
             self.animation_time += dt
+        length = hypot(dx, dy)
+        if length:
+            dx, dy = dx / length, dy / length
         speed = RUN_SPEED if running else WALK_SPEED
         self.x += dx * speed * dt
         self.y += dy * speed * dt
