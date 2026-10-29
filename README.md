@@ -15,4 +15,8 @@ python -m venv .venv
 .\.venv\Scripts\python.exe -m pip install -r requirements.txt
 ```
 
-진입점은 다음 개발 단계에서 추가됩니다. 상세 요구 사항은 `PRD.md`에 있습니다.
+```powershell
+.\.venv\Scripts\python.exe main.py
+```
+
+Esc 또는 창 닫기로 종료합니다. 상세 요구 사항은 `PRD.md`에 있습니다.
