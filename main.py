@@ -36,6 +36,8 @@ def main():
                     running = False
             if not running:
                 break
+            # pico2d filters out SDL window-focus events; query focus after polling.
+            controls.reset_if_unfocused(bool(p.SDL_GetKeyboardFocus()))
             character.update(dt, controls.direction, controls.running)
             character.constrain(WINDOW_WIDTH, WINDOW_HEIGHT)
             p.clear_canvas()

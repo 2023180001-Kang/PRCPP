@@ -8,6 +8,10 @@ class Controls:
     def __init__(self):
         self.pressed = set()
 
+    def reset_if_unfocused(self, focused):
+        if not focused:
+            self.pressed.clear()
+
     def handle_event(self, event):
         if event.key not in CONTROL_KEYS:
             return
