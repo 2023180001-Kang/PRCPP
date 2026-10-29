@@ -14,6 +14,7 @@ WINDOW_WIDTH = 1280
 WINDOW_HEIGHT = 720
 TARGET_FPS = 60
 ASSET_DIR = Path(__file__).resolve().parent
+SPRITE_FILENAME = "tino_sprite_pico2d_final.png"
 
 
 def load_asset(name):
@@ -32,11 +33,11 @@ def main():
     try:
         p.hide_lattice()
         background = load_asset("arena.png")
-        sprite = load_asset("tino_sprite_pico2d.png")
+        sprite = load_asset(SPRITE_FILENAME)
         expected_size = (FRAME_WIDTH * FRAME_COUNT, FRAME_HEIGHT * len(STATE_ROWS))
         if (sprite.w, sprite.h) != expected_size:
             raise ValueError(
-                f"Invalid sprite size: {ASSET_DIR / 'tino_sprite_pico2d.png'}; "
+                f"Invalid sprite size: {ASSET_DIR / SPRITE_FILENAME}; "
                 f"expected {expected_size}, got {(sprite.w, sprite.h)}"
             )
         background_scale = min(WINDOW_WIDTH / background.w, WINDOW_HEIGHT / background.h)

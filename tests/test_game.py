@@ -3,7 +3,7 @@ import io
 from math import hypot
 from pathlib import Path
 import unittest
-from unittest.mock import Mock, patch
+from unittest.mock import Mock, call, patch
 
 from character import Character, ANIMATION_FPS, FRAME_COUNT, STATE_ROWS
 from controls import Controls, p
@@ -74,6 +74,17 @@ class CharacterTests(unittest.TestCase):
             for frame in range(FRAME_COUNT * 3):
                 actor.animation_time = (frame + 0.1) / ANIMATION_FPS[state]
                 self.assertEqual(actor.source_rect, ((frame % 6) * 128, row * 128, 128, 128))
+
+    def test_final_sheet_layout_and_last_frame_bounds(self):
+        self.assertEqual(STATE_ROWS, {"IDLE": 0, "WALK": 1, "RUN": 2})
+        self.assertEqual(FRAME_COUNT, 6)
+        for state, bottom in (("IDLE", 0), ("WALK", 128), ("RUN", 256)):
+            actor = Character(0, 0, state=state)
+            actor.animation_time = 5.1 / ANIMATION_FPS[state]
+            self.assertEqual(actor.source_rect, (640, bottom, 128, 128))
+            left, y, width, height = actor.source_rect
+            self.assertLessEqual(left + width, 768)
+            self.assertLessEqual(y + height, 384)
 
     def test_diagonal_distance(self):
         for running, distance in ((False, 320), (True, 640)):
@@ -204,6 +215,32 @@ class MainTests(unittest.TestCase):
         self.run_events([[key_event(p.SDL_KEYDOWN, p.SDLK_LEFT)], [p.Event(p.SDL_QUIT)]])
         self.assertEqual(self.sprite.clip_composite_draw.call_args.args[5], "h")
 
+    def test_only_final_sprite_is_loaded(self):
+        self.run_events([[], [p.Event(p.SDL_QUIT)]])
+        self.assertEqual(self.loader.call_args_list, [
+            call(str(main.ASSET_DIR / "arena.png")),
+            call(str(main.ASSET_DIR / "tino_sprite_pico2d_final.png")),
+        ])
+
+    def test_missing_final_sprite_does_not_fall_back(self):
+        output = io.StringIO()
+        with patch.object(Path, "is_file", side_effect=[True, False]), redirect_stderr(output):
+            self.assertEqual(main.main(), 1)
+        self.assertIn("tino_sprite_pico2d_final.png", output.getvalue())
+        self.loader.assert_called_once_with(str(main.ASSET_DIR / "arena.png"))
+        self.mocks["close_canvas"].assert_called_once()
+
+    def test_corrupt_final_sprite_does_not_fall_back(self):
+        texture = self.background.texture
+        self.loader.side_effect = [self.background, OSError("invalid image")]
+        output = io.StringIO()
+        with redirect_stderr(output):
+            self.assertEqual(main.main(), 1)
+        self.assertIn("tino_sprite_pico2d_final.png", output.getvalue())
+        self.assertEqual(self.loader.call_count, 2)
+        self.mocks["SDL_DestroyTexture"].assert_called_once_with(texture)
+        self.mocks["close_canvas"].assert_called_once()
+
     def test_missing_resource_path_and_failure_code(self):
         output = io.StringIO()
         with patch.object(main, "ASSET_DIR", Path("missing-test-assets").resolve()), redirect_stderr(output):
@@ -221,7 +258,7 @@ class MainTests(unittest.TestCase):
         output = io.StringIO()
         with redirect_stderr(output):
             self.assertEqual(main.main(), 1)
-        self.assertIn("tino_sprite_pico2d.png", output.getvalue())
+        self.assertIn("tino_sprite_pico2d_final.png", output.getvalue())
         self.mocks["close_canvas"].assert_called_once()
 
     def test_unexpected_render_exception_still_closes(self):
