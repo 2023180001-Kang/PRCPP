@@ -3,7 +3,7 @@ from pathlib import Path
 
 import pico2d as p
 
-from character import Character
+from character import Character, DRAW_HEIGHT, DRAW_WIDTH
 
 
 WINDOW_WIDTH = 1280
@@ -17,6 +17,7 @@ def main():
     try:
         p.hide_lattice()
         background = p.load_image(str(ASSET_DIR / "arena.png"))
+        sprite = p.load_image(str(ASSET_DIR / "tino_sprite_pico2d.png"))
         background_scale = min(WINDOW_WIDTH / background.w, WINDOW_HEIGHT / background.h)
         character = Character(WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2)
         running = True
@@ -36,6 +37,9 @@ def main():
             background.draw(
                 WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2,
                 background.w * background_scale, background.h * background_scale,
+            )
+            sprite.clip_draw(
+                *character.source_rect, character.x, character.y, DRAW_WIDTH, DRAW_HEIGHT,
             )
             p.update_canvas()
             sleep(max(0, 1 / TARGET_FPS - (perf_counter() - frame_start)))
