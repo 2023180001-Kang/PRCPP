@@ -48,7 +48,8 @@ class Character:
 
     @property
     def frame(self):
-        return int(self.animation_time * ANIMATION_FPS[self.state]) % FRAME_COUNT
+        # Avoid a one-frame lag from accumulated rounding at exact frame boundaries.
+        return int(self.animation_time * ANIMATION_FPS[self.state] + 1e-9) % FRAME_COUNT
 
     @property
     def source_rect(self):
