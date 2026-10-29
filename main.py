@@ -75,7 +75,11 @@ def main():
         print(error, file=sys.stderr)
         return 1
     finally:
-        # Image destructors must run while their SDL renderer still exists.
+        # Tracebacks may keep Image instances alive beyond renderer shutdown.
+        for image in (background, sprite):
+            if image is not None:
+                p.SDL_DestroyTexture(image.texture)
+                image.texture = None
         background = sprite = None
         p.close_canvas()
     return 0

@@ -18,6 +18,9 @@ def verify(seconds, fps, assume_focus=False):
     presented = []
     states = set()
     facings = set()
+    animation_frames = {state: set() for state in ("IDLE", "WALK", "RUN")}
+    movement_checks = 0
+    previous = None
     stage = -1
     start = None
     schedule = (
@@ -65,13 +68,32 @@ def verify(seconds, fps, assume_focus=False):
         return original_events()
 
     def present():
+        nonlocal movement_checks, previous
         original_present()
         if actors:
             actor = actors[0]
             assert 64 <= actor.x <= 1216 and 64 <= actor.y <= 656
             assert 0 <= actor.frame < 6
+            dx = int(p.SDLK_RIGHT in held) - int(p.SDLK_LEFT in held)
+            dy = int(p.SDLK_UP in held) - int(p.SDLK_DOWN in held)
+            expected = "IDLE" if not (dx or dy) else "RUN" if p.SDLK_r in held else "WALK"
+            assert actor.state == expected, (stage, actor.state, expected)
+            if previous is not None and previous[2] == stage:
+                old_x, old_y, _ = previous
+                if not dx:
+                    assert actor.x == old_x
+                elif 64 < old_x < 1216:
+                    assert (actor.x - old_x) * dx > 0, "Horizontal movement stalled"
+                    movement_checks += 1
+                if not dy:
+                    assert actor.y == old_y
+                elif 64 < old_y < 656:
+                    assert (actor.y - old_y) * dy > 0, "Vertical movement stalled"
+                    movement_checks += 1
+            previous = (actor.x, actor.y, stage)
             states.add(actor.state)
             facings.add(actor.facing_right)
+            animation_frames[actor.state].add(actor.frame)
             presented.append(perf_counter())
 
     with (
@@ -85,9 +107,12 @@ def verify(seconds, fps, assume_focus=False):
     assert result == 0, f"Application exit code: {result}"
     assert states == {"IDLE", "WALK", "RUN"}, f"Missing states (check window focus): {states}"
     assert facings == {False, True}, f"Missing facing directions: {facings}"
+    assert movement_checks > 0, "No unobstructed movement verified"
+    assert all(len(frames) > 1 for frames in animation_frames.values()), animation_frames
     measured_fps = (len(presented) - 1) / (presented[-1] - presented[0])
     print(f"PASS: seconds={seconds}, frames={len(presented)}, target_fps={fps}, measured_fps={measured_fps:.2f}")
     print(f"States={sorted(states)}, both facings, frame bounds, screen bounds, native QUIT: PASS")
+    print(f"Per-frame state and displacement checks={movement_checks}, all three animations advancing: PASS")
     print(f"Focus check: {'OVERRIDDEN (manual focus acceptance still required)' if assume_focus else 'native'}")
 
 

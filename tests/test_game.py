@@ -166,7 +166,10 @@ class MainTests(unittest.TestCase):
         self.stack = ExitStack()
         self.addCleanup(self.stack.close)
         self.mocks = {}
-        for name in ("open_canvas", "close_canvas", "hide_lattice", "clear_canvas", "update_canvas"):
+        for name in (
+            "open_canvas", "close_canvas", "hide_lattice", "clear_canvas",
+            "update_canvas", "SDL_DestroyTexture",
+        ):
             self.mocks[name] = self.stack.enter_context(patch.object(p, name))
         self.stack.enter_context(patch.object(main, "sleep"))
         self.stack.enter_context(patch.object(p, "SDL_GetKeyboardFocus", return_value=True))
@@ -222,6 +225,22 @@ class MainTests(unittest.TestCase):
         self.mocks["close_canvas"].assert_called_once()
 
     def test_unexpected_render_exception_still_closes(self):
+        self.sprite.clip_composite_draw.side_effect = RuntimeError("render failed")
+        with self.assertRaisesRegex(RuntimeError, "render failed"):
+            self.run_events([[]])
+        self.mocks["close_canvas"].assert_called_once()
+
+    def test_textures_released_before_renderer_even_with_traceback(self):
+        textures = [self.background.texture, self.sprite.texture]
+        destroyed = []
+        self.mocks["SDL_DestroyTexture"].side_effect = destroyed.append
+
+        def check_close():
+            self.assertEqual(destroyed, textures)
+            self.assertIsNone(self.background.texture)
+            self.assertIsNone(self.sprite.texture)
+
+        self.mocks["close_canvas"].side_effect = check_close
         self.sprite.clip_composite_draw.side_effect = RuntimeError("render failed")
         with self.assertRaisesRegex(RuntimeError, "render failed"):
             self.run_events([[]])
