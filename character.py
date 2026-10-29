@@ -22,9 +22,14 @@ class Character:
 
     def update(self, dt, direction=(0, 0)):
         dx, dy = direction
+        next_state = "WALK" if dx or dy else "IDLE"
+        if next_state != self.state:
+            self.state = next_state
+            self.animation_time = 0.0
+        else:
+            self.animation_time += dt
         self.x += dx * WALK_SPEED * dt
         self.y += dy * WALK_SPEED * dt
-        self.animation_time += dt
 
     @property
     def frame(self):
