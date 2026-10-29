@@ -23,7 +23,10 @@ class Character:
 
     def update(self, dt, direction=(0, 0), running=False):
         dx, dy = direction
-        next_state = "WALK" if dx or dy else "IDLE"
+        if not (dx or dy):
+            next_state = "IDLE"
+        else:
+            next_state = "RUN" if running else "WALK"
         if next_state != self.state:
             self.state = next_state
             self.animation_time = 0.0
