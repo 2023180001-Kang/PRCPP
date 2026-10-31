@@ -18,6 +18,10 @@ ASSET_DIR = Path(__file__).resolve().parent
 SPRITE_FILENAME = "tino_sprite_pico2d_final.png"
 BOOK_FILENAME = "algorithm_book_pico2d_128.png"
 BOOK_SIZE = 96
+HEART_FILENAME = "Heart.png"
+HEART_FRAME_SIZE = 887
+HEART_SIZE = 64
+HUD_MARGIN = 20
 
 
 def spawn_books():
@@ -42,7 +46,7 @@ def load_asset(name):
 
 def main():
     p.open_canvas(WINDOW_WIDTH, WINDOW_HEIGHT)
-    background = sprite = book = None
+    background = sprite = book = heart = None
     try:
         p.hide_lattice()
         background = load_asset("arena.png")
@@ -55,6 +59,12 @@ def main():
             )
         background_scale = min(WINDOW_WIDTH / background.w, WINDOW_HEIGHT / background.h)
         book = load_asset(BOOK_FILENAME)
+        heart = load_asset(HEART_FILENAME)
+        if (heart.w, heart.h) != (HEART_FRAME_SIZE * 2, HEART_FRAME_SIZE):
+            raise ValueError(
+                f"Invalid heart sheet size: {ASSET_DIR / HEART_FILENAME}; "
+                f"expected {(HEART_FRAME_SIZE * 2, HEART_FRAME_SIZE)}, got {(heart.w, heart.h)}"
+            )
         books = spawn_books()
         character = Character(WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2)
         controls = Controls()
@@ -87,6 +97,12 @@ def main():
                 *character.source_rect, 0, "" if character.facing_right else "h",
                 character.x, character.y, DRAW_WIDTH, DRAW_HEIGHT,
             )
+            # The left square of the sheet contains the red heart.
+            heart.clip_draw(
+                0, 0, HEART_FRAME_SIZE, HEART_FRAME_SIZE,
+                WINDOW_WIDTH - HUD_MARGIN - HEART_SIZE / 2,
+                WINDOW_HEIGHT - HUD_MARGIN - HEART_SIZE / 2, HEART_SIZE, HEART_SIZE,
+            )
             p.update_canvas()
             sleep(max(0, 1 / TARGET_FPS - (perf_counter() - frame_start)))
     except (OSError, ValueError) as error:
@@ -94,11 +110,11 @@ def main():
         return 1
     finally:
         # Tracebacks may keep Image instances alive beyond renderer shutdown.
-        for image in (background, sprite, book):
+        for image in (background, sprite, book, heart):
             if image is not None:
                 p.SDL_DestroyTexture(image.texture)
                 image.texture = None
-        background = sprite = book = None
+        background = sprite = book = heart = None
         p.close_canvas()
     return 0
 
