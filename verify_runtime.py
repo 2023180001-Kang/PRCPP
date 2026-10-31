@@ -18,6 +18,7 @@ def verify(seconds, fps, assume_focus=False):
     original_spawn = main.spawn_books
     books = []
     book_draws = []
+    heart_draws = []
 
     def spawn_books():
         books.extend(original_spawn())
@@ -35,6 +36,14 @@ def verify(seconds, fps, assume_focus=False):
                 book_draws.append(args)
 
             image.draw = draw
+        elif name == main.HEART_FILENAME:
+            original_clip = image.clip_draw
+
+            def clip_draw(*args):
+                original_clip(*args)
+                heart_draws.append(args)
+
+            image.clip_draw = clip_draw
         return image
 
     actors = []
@@ -95,6 +104,8 @@ def verify(seconds, fps, assume_focus=False):
         original_present()
         assert book_draws == [(x, y, main.BOOK_SIZE, main.BOOK_SIZE) for x, y in books]
         book_draws.clear()
+        assert heart_draws == [(0, 0, 887, 887, x, 668, 64, 64) for x in (1228, 1156, 1084)]
+        heart_draws.clear()
         if actors:
             actor = actors[0]
             assert 64 <= actor.x <= 1216 and 64 <= actor.y <= 656
@@ -142,6 +153,7 @@ def verify(seconds, fps, assume_focus=False):
     print(f"Per-frame state and displacement checks={movement_checks}, all three animations advancing: PASS")
     print(f"Book image={main.BOOK_FILENAME}, 128x128 source: PASS")
     print(f"Books={len(books)}, fixed spawn positions drawn every frame: PASS")
+    print("Hearts=3, red frame only, fixed top-right HUD every frame: PASS")
     print(f"Focus check: {'OVERRIDDEN (manual focus acceptance still required)' if assume_focus else 'native'}")
 
 

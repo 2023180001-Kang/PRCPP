@@ -232,8 +232,10 @@ class MainTests(unittest.TestCase):
         calls.attach_mock(self.heart.clip_draw, "heart")
         self.assertEqual(self.run_events([[], [], [p.Event(p.SDL_QUIT)]]), 0)
         self.assertEqual(self.loader.call_count, 4)
-        self.assertEqual([c[0] for c in calls.mock_calls], ["background", "book", "book", "book", "sprite", "heart"] * 2)
-        self.assertEqual(self.heart.clip_draw.call_args_list, [call(0, 0, 887, 887, 1228, 668, 64, 64)] * 2)
+        self.assertEqual([c[0] for c in calls.mock_calls], ["background", "book", "book", "book", "sprite", "heart", "heart", "heart"] * 2)
+        self.assertEqual(self.heart.clip_draw.call_args_list, [
+            call(0, 0, 887, 887, x, 668, 64, 64) for x in (1228, 1156, 1084)
+        ] * 2)
         self.spawner.assert_called_once_with()
         self.assertEqual(self.book.draw.call_args_list, [call(x, y, 96, 96) for x, y in self.books] * 2)
         _, _, width, height = self.background.draw.call_args.args
@@ -361,6 +363,14 @@ class MainTests(unittest.TestCase):
         self.sprite.clip_composite_draw.side_effect = RuntimeError("render failed")
         with self.assertRaisesRegex(RuntimeError, "render failed"):
             self.run_events([[]])
+        self.mocks["close_canvas"].assert_called_once()
+
+    def test_heart_render_failure_releases_all_textures(self):
+        self.heart.clip_draw.side_effect = RuntimeError("HUD render failed")
+        with self.assertRaisesRegex(RuntimeError, "HUD render failed"):
+            self.run_events([[]])
+        self.assertEqual(self.mocks["SDL_DestroyTexture"].call_count, 4)
+        self.assertIsNone(self.heart.texture)
         self.mocks["close_canvas"].assert_called_once()
 
     def test_textures_released_before_renderer_even_with_traceback(self):

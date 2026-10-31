@@ -21,6 +21,8 @@ BOOK_SIZE = 96
 HEART_FILENAME = "Heart.png"
 HEART_FRAME_SIZE = 887
 HEART_SIZE = 64
+HEART_COUNT = 3
+HEART_GAP = 8
 HUD_MARGIN = 20
 
 
@@ -98,11 +100,12 @@ def main():
                 character.x, character.y, DRAW_WIDTH, DRAW_HEIGHT,
             )
             # The left square of the sheet contains the red heart.
-            heart.clip_draw(
-                0, 0, HEART_FRAME_SIZE, HEART_FRAME_SIZE,
-                WINDOW_WIDTH - HUD_MARGIN - HEART_SIZE / 2,
-                WINDOW_HEIGHT - HUD_MARGIN - HEART_SIZE / 2, HEART_SIZE, HEART_SIZE,
-            )
+            for index in range(HEART_COUNT):
+                heart.clip_draw(
+                    0, 0, HEART_FRAME_SIZE, HEART_FRAME_SIZE,
+                    WINDOW_WIDTH - HUD_MARGIN - HEART_SIZE / 2 - index * (HEART_SIZE + HEART_GAP),
+                    WINDOW_HEIGHT - HUD_MARGIN - HEART_SIZE / 2, HEART_SIZE, HEART_SIZE,
+                )
             p.update_canvas()
             sleep(max(0, 1 / TARGET_FPS - (perf_counter() - frame_start)))
     except (OSError, ValueError) as error:
