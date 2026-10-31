@@ -208,7 +208,7 @@ class MainTests(unittest.TestCase):
         self.stack.enter_context(patch.object(p, "SDL_GetKeyboardFocus", return_value=True))
         self.background = Mock(w=1672, h=941)
         self.sprite = Mock(w=768, h=384)
-        self.book = Mock(w=1254, h=1254)
+        self.book = Mock(w=128, h=128)
         self.loader = self.stack.enter_context(patch.object(
             p, "load_image", side_effect=[self.background, self.sprite, self.book],
         ))
@@ -246,7 +246,7 @@ class MainTests(unittest.TestCase):
         self.assertEqual(self.loader.call_args_list, [
             call(str(main.ASSET_DIR / "arena.png")),
             call(str(main.ASSET_DIR / "tino_sprite_pico2d_final.png")),
-            call(str(main.ASSET_DIR / "Book_Item.png")),
+            call(str(main.ASSET_DIR / "algorithm_book_pico2d_128.png")),
         ])
 
     def test_missing_final_sprite_does_not_fall_back(self):
@@ -258,17 +258,31 @@ class MainTests(unittest.TestCase):
         self.mocks["close_canvas"].assert_called_once()
 
     def test_book_filename_setting_controls_loading(self):
-        with patch.object(main, "BOOK_FILENAME", "algorithm_book_pico2d_128.png"):
+        with (
+            patch.object(main, "BOOK_FILENAME", "configured-book.png"),
+            patch.object(Path, "is_file", return_value=True),
+        ):
             self.assertEqual(self.run_events([[], [p.Event(p.SDL_QUIT)]]), 0)
-        self.assertEqual(self.loader.call_args, call(str(main.ASSET_DIR / "algorithm_book_pico2d_128.png")))
+        self.assertEqual(self.loader.call_args, call(str(main.ASSET_DIR / "configured-book.png")))
         self.assertEqual(self.book.draw.call_count, 3)
+
+    def test_each_spawn_count_is_rendered(self):
+        for count in (3, 4, 5):
+            with self.subTest(count=count):
+                positions = [(80 + 112 * index, 160) for index in range(count)]
+                self.spawner.return_value = positions
+                self.loader.side_effect = [self.background, self.sprite, self.book]
+                self.book.draw.reset_mock()
+                self.assertEqual(self.run_events([[], [p.Event(p.SDL_QUIT)]]), 0)
+                self.assertEqual(self.book.draw.call_args_list, [call(x, y, 96, 96) for x, y in positions])
 
     def test_missing_book_fails_cleanly(self):
         textures = [self.background.texture, self.sprite.texture]
         output = io.StringIO()
         with patch.object(Path, "is_file", side_effect=[True, True, False]), redirect_stderr(output):
             self.assertEqual(main.main(), 1)
-        self.assertIn("Book_Item.png", output.getvalue())
+        self.assertIn("algorithm_book_pico2d_128.png", output.getvalue())
+        self.assertEqual(self.loader.call_count, 2)
         self.assertEqual(self.mocks["SDL_DestroyTexture"].call_args_list, [call(t) for t in textures])
         self.mocks["close_canvas"].assert_called_once()
 
@@ -277,7 +291,8 @@ class MainTests(unittest.TestCase):
         output = io.StringIO()
         with redirect_stderr(output):
             self.assertEqual(main.main(), 1)
-        self.assertIn("Book_Item.png", output.getvalue())
+        self.assertIn("algorithm_book_pico2d_128.png", output.getvalue())
+        self.assertEqual(self.loader.call_count, 3)
         self.assertEqual(self.mocks["SDL_DestroyTexture"].call_count, 2)
         self.mocks["close_canvas"].assert_called_once()
 

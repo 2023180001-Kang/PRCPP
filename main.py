@@ -16,7 +16,7 @@ WINDOW_HEIGHT = 720
 TARGET_FPS = 60
 ASSET_DIR = Path(__file__).resolve().parent
 SPRITE_FILENAME = "tino_sprite_pico2d_final.png"
-BOOK_FILENAME = "Book_Item.png"
+BOOK_FILENAME = "algorithm_book_pico2d_128.png"
 BOOK_SIZE = 96
 
 

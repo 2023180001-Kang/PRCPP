@@ -27,6 +27,7 @@ def verify(seconds, fps, assume_focus=False):
     def load_asset(name):
         image = original_load(name)
         if name == main.BOOK_FILENAME:
+            assert (image.w, image.h) == (128, 128), "Unexpected book image dimensions"
             original_draw = image.draw
 
             def draw(*args):
@@ -139,6 +140,7 @@ def verify(seconds, fps, assume_focus=False):
     print(f"PASS: seconds={seconds}, frames={len(presented)}, target_fps={fps}, measured_fps={measured_fps:.2f}")
     print(f"States={sorted(states)}, both facings, frame bounds, screen bounds, native QUIT: PASS")
     print(f"Per-frame state and displacement checks={movement_checks}, all three animations advancing: PASS")
+    print(f"Book image={main.BOOK_FILENAME}, 128x128 source: PASS")
     print(f"Books={len(books)}, fixed spawn positions drawn every frame: PASS")
     print(f"Focus check: {'OVERRIDDEN (manual focus acceptance still required)' if assume_focus else 'native'}")
 
