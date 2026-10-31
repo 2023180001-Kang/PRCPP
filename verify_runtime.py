@@ -14,6 +14,28 @@ def verify(seconds, fps, assume_focus=False):
     p = main.p
     original_events = p.get_events
     original_present = p.update_canvas
+    original_load = main.load_asset
+    original_spawn = main.spawn_books
+    books = []
+    book_draws = []
+
+    def spawn_books():
+        books.extend(original_spawn())
+        assert 3 <= len(books) <= 5
+        return books
+
+    def load_asset(name):
+        image = original_load(name)
+        if name == "Book_Item.png":
+            original_draw = image.draw
+
+            def draw(*args):
+                original_draw(*args)
+                book_draws.append(args)
+
+            image.draw = draw
+        return image
+
     actors = []
     presented = []
     states = set()
@@ -70,6 +92,8 @@ def verify(seconds, fps, assume_focus=False):
     def present():
         nonlocal movement_checks, previous
         original_present()
+        assert book_draws == [(x, y, main.BOOK_SIZE, main.BOOK_SIZE) for x, y in books]
+        book_draws.clear()
         if actors:
             actor = actors[0]
             assert 64 <= actor.x <= 1216 and 64 <= actor.y <= 656
@@ -98,6 +122,8 @@ def verify(seconds, fps, assume_focus=False):
 
     with (
         patch.object(main, "TARGET_FPS", fps),
+        patch.object(main, "spawn_books", side_effect=spawn_books),
+        patch.object(main, "load_asset", side_effect=load_asset),
         patch.object(main, "Character", side_effect=create_actor),
         patch.object(p, "get_events", side_effect=get_events),
         patch.object(p, "update_canvas", side_effect=present),
@@ -113,6 +139,7 @@ def verify(seconds, fps, assume_focus=False):
     print(f"PASS: seconds={seconds}, frames={len(presented)}, target_fps={fps}, measured_fps={measured_fps:.2f}")
     print(f"States={sorted(states)}, both facings, frame bounds, screen bounds, native QUIT: PASS")
     print(f"Per-frame state and displacement checks={movement_checks}, all three animations advancing: PASS")
+    print(f"Books={len(books)}, fixed spawn positions drawn every frame: PASS")
     print(f"Focus check: {'OVERRIDDEN (manual focus acceptance still required)' if assume_focus else 'native'}")
 
 

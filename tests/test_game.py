@@ -2,6 +2,7 @@ from contextlib import ExitStack, redirect_stderr
 import io
 from math import hypot
 from pathlib import Path
+import random
 import unittest
 from unittest.mock import Mock, call, patch
 
@@ -172,6 +173,25 @@ class ControlsTests(unittest.TestCase):
         self.assertEqual(self.controls.direction, (0, 0))
 
 
+class BookSpawnTests(unittest.TestCase):
+    def test_counts_bounds_and_no_overlap_across_seeds(self):
+        counts = set()
+        layouts = set()
+        for seed in range(100):
+            with patch.object(main, "random", random.Random(seed)):
+                books = main.spawn_books()
+            counts.add(len(books))
+            layouts.add(tuple(books))
+            self.assertIn(len(books), (3, 4, 5))
+            for index, (x, y) in enumerate(books):
+                self.assertTrue(main.BOOK_SIZE / 2 <= x <= main.WINDOW_WIDTH - main.BOOK_SIZE / 2)
+                self.assertTrue(main.BOOK_SIZE / 2 <= y <= main.WINDOW_HEIGHT - main.BOOK_SIZE / 2)
+                for other_x, other_y in books[:index]:
+                    self.assertTrue(abs(x - other_x) >= main.BOOK_SIZE or abs(y - other_y) >= main.BOOK_SIZE)
+        self.assertEqual(counts, {3, 4, 5})
+        self.assertGreater(len(layouts), 1)
+
+
 class MainTests(unittest.TestCase):
     def setUp(self):
         self.stack = ExitStack()
@@ -183,6 +203,8 @@ class MainTests(unittest.TestCase):
         ):
             self.mocks[name] = self.stack.enter_context(patch.object(p, name))
         self.stack.enter_context(patch.object(main, "sleep"))
+        self.books = [(160, 160), (384, 272), (944, 496)]
+        self.spawner = self.stack.enter_context(patch.object(main, "spawn_books", return_value=self.books))
         self.stack.enter_context(patch.object(p, "SDL_GetKeyboardFocus", return_value=True))
         self.background = Mock(w=1672, h=941)
         self.sprite = Mock(w=768, h=384)
@@ -208,8 +230,9 @@ class MainTests(unittest.TestCase):
         calls.attach_mock(self.sprite.clip_composite_draw, "sprite")
         self.assertEqual(self.run_events([[], [], [p.Event(p.SDL_QUIT)]]), 0)
         self.assertEqual(self.loader.call_count, 3)
-        self.assertEqual([c[0] for c in calls.mock_calls], ["background", "book", "sprite"] * 2)
-        self.assertEqual(self.book.draw.call_args.args, (320, 360, 96, 96))
+        self.assertEqual([c[0] for c in calls.mock_calls], ["background", "book", "book", "book", "sprite"] * 2)
+        self.spawner.assert_called_once_with()
+        self.assertEqual(self.book.draw.call_args_list, [call(x, y, 96, 96) for x, y in self.books] * 2)
         _, _, width, height = self.background.draw.call_args.args
         self.assertAlmostEqual(width / height, 1672 / 941)
         self.assertEqual(self.sprite.clip_composite_draw.call_args.args[-2:], (128, 128))

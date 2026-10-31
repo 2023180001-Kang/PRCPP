@@ -1,5 +1,6 @@
 from time import perf_counter, sleep
 from pathlib import Path
+import random
 import sys
 
 import pico2d as p
@@ -16,6 +17,16 @@ TARGET_FPS = 60
 ASSET_DIR = Path(__file__).resolve().parent
 SPRITE_FILENAME = "tino_sprite_pico2d_final.png"
 BOOK_SIZE = 96
+
+
+def spawn_books():
+    # Sample without replacement from spaced slots so books cannot overlap.
+    positions = [
+        (x, y)
+        for x in range(BOOK_SIZE // 2, WINDOW_WIDTH - BOOK_SIZE // 2 + 1, BOOK_SIZE + 16)
+        for y in range(BOOK_SIZE // 2, WINDOW_HEIGHT - BOOK_SIZE // 2 + 1, BOOK_SIZE + 16)
+    ]
+    return random.sample(positions, random.randint(3, 5))
 
 
 def load_asset(name):
@@ -43,6 +54,7 @@ def main():
             )
         background_scale = min(WINDOW_WIDTH / background.w, WINDOW_HEIGHT / background.h)
         book = load_asset("Book_Item.png")
+        books = spawn_books()
         character = Character(WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2)
         controls = Controls()
         running = True
@@ -68,7 +80,8 @@ def main():
                 WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2,
                 background.w * background_scale, background.h * background_scale,
             )
-            book.draw(WINDOW_WIDTH / 4, WINDOW_HEIGHT / 2, BOOK_SIZE, BOOK_SIZE)
+            for x, y in books:
+                book.draw(x, y, BOOK_SIZE, BOOK_SIZE)
             sprite.clip_composite_draw(
                 *character.source_rect, 0, "" if character.facing_right else "h",
                 character.x, character.y, DRAW_WIDTH, DRAW_HEIGHT,
