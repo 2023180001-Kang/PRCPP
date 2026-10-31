@@ -186,8 +186,9 @@ class MainTests(unittest.TestCase):
         self.stack.enter_context(patch.object(p, "SDL_GetKeyboardFocus", return_value=True))
         self.background = Mock(w=1672, h=941)
         self.sprite = Mock(w=768, h=384)
+        self.book = Mock(w=1254, h=1254)
         self.loader = self.stack.enter_context(patch.object(
-            p, "load_image", side_effect=[self.background, self.sprite],
+            p, "load_image", side_effect=[self.background, self.sprite, self.book],
         ))
 
     def run_events(self, batches):
@@ -196,17 +197,19 @@ class MainTests(unittest.TestCase):
 
     def test_quit_and_esc_cleanup(self):
         for event in (p.Event(p.SDL_QUIT), key_event(p.SDL_KEYDOWN, p.SDLK_ESCAPE)):
-            self.loader.side_effect = [self.background, self.sprite]
+            self.loader.side_effect = [self.background, self.sprite, self.book]
             self.assertEqual(self.run_events([[event]]), 0)
         self.assertEqual(self.mocks["close_canvas"].call_count, 2)
 
     def test_render_order_dimensions_and_single_load(self):
         calls = Mock()
         calls.attach_mock(self.background.draw, "background")
+        calls.attach_mock(self.book.draw, "book")
         calls.attach_mock(self.sprite.clip_composite_draw, "sprite")
         self.assertEqual(self.run_events([[], [], [p.Event(p.SDL_QUIT)]]), 0)
-        self.assertEqual(self.loader.call_count, 2)
-        self.assertEqual([c[0] for c in calls.mock_calls], ["background", "sprite"] * 2)
+        self.assertEqual(self.loader.call_count, 3)
+        self.assertEqual([c[0] for c in calls.mock_calls], ["background", "book", "sprite"] * 2)
+        self.assertEqual(self.book.draw.call_args.args, (320, 360, 96, 96))
         _, _, width, height = self.background.draw.call_args.args
         self.assertAlmostEqual(width / height, 1672 / 941)
         self.assertEqual(self.sprite.clip_composite_draw.call_args.args[-2:], (128, 128))
@@ -220,6 +223,7 @@ class MainTests(unittest.TestCase):
         self.assertEqual(self.loader.call_args_list, [
             call(str(main.ASSET_DIR / "arena.png")),
             call(str(main.ASSET_DIR / "tino_sprite_pico2d_final.png")),
+            call(str(main.ASSET_DIR / "Book_Item.png")),
         ])
 
     def test_missing_final_sprite_does_not_fall_back(self):
@@ -228,6 +232,24 @@ class MainTests(unittest.TestCase):
             self.assertEqual(main.main(), 1)
         self.assertIn("tino_sprite_pico2d_final.png", output.getvalue())
         self.loader.assert_called_once_with(str(main.ASSET_DIR / "arena.png"))
+        self.mocks["close_canvas"].assert_called_once()
+
+    def test_missing_book_fails_cleanly(self):
+        textures = [self.background.texture, self.sprite.texture]
+        output = io.StringIO()
+        with patch.object(Path, "is_file", side_effect=[True, True, False]), redirect_stderr(output):
+            self.assertEqual(main.main(), 1)
+        self.assertIn("Book_Item.png", output.getvalue())
+        self.assertEqual(self.mocks["SDL_DestroyTexture"].call_args_list, [call(t) for t in textures])
+        self.mocks["close_canvas"].assert_called_once()
+
+    def test_corrupt_book_fails_cleanly(self):
+        self.loader.side_effect = [self.background, self.sprite, OSError("invalid image")]
+        output = io.StringIO()
+        with redirect_stderr(output):
+            self.assertEqual(main.main(), 1)
+        self.assertIn("Book_Item.png", output.getvalue())
+        self.assertEqual(self.mocks["SDL_DestroyTexture"].call_count, 2)
         self.mocks["close_canvas"].assert_called_once()
 
     def test_corrupt_final_sprite_does_not_fall_back(self):
@@ -268,7 +290,7 @@ class MainTests(unittest.TestCase):
         self.mocks["close_canvas"].assert_called_once()
 
     def test_textures_released_before_renderer_even_with_traceback(self):
-        textures = [self.background.texture, self.sprite.texture]
+        textures = [self.background.texture, self.sprite.texture, self.book.texture]
         destroyed = []
         self.mocks["SDL_DestroyTexture"].side_effect = destroyed.append
 
@@ -276,6 +298,7 @@ class MainTests(unittest.TestCase):
             self.assertEqual(destroyed, textures)
             self.assertIsNone(self.background.texture)
             self.assertIsNone(self.sprite.texture)
+            self.assertIsNone(self.book.texture)
 
         self.mocks["close_canvas"].side_effect = check_close
         self.sprite.clip_composite_draw.side_effect = RuntimeError("render failed")

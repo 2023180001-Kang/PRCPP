@@ -15,6 +15,7 @@ WINDOW_HEIGHT = 720
 TARGET_FPS = 60
 ASSET_DIR = Path(__file__).resolve().parent
 SPRITE_FILENAME = "tino_sprite_pico2d_final.png"
+BOOK_SIZE = 96
 
 
 def load_asset(name):
@@ -29,7 +30,7 @@ def load_asset(name):
 
 def main():
     p.open_canvas(WINDOW_WIDTH, WINDOW_HEIGHT)
-    background = sprite = None
+    background = sprite = book = None
     try:
         p.hide_lattice()
         background = load_asset("arena.png")
@@ -41,6 +42,7 @@ def main():
                 f"expected {expected_size}, got {(sprite.w, sprite.h)}"
             )
         background_scale = min(WINDOW_WIDTH / background.w, WINDOW_HEIGHT / background.h)
+        book = load_asset("Book_Item.png")
         character = Character(WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2)
         controls = Controls()
         running = True
@@ -66,6 +68,7 @@ def main():
                 WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2,
                 background.w * background_scale, background.h * background_scale,
             )
+            book.draw(WINDOW_WIDTH / 4, WINDOW_HEIGHT / 2, BOOK_SIZE, BOOK_SIZE)
             sprite.clip_composite_draw(
                 *character.source_rect, 0, "" if character.facing_right else "h",
                 character.x, character.y, DRAW_WIDTH, DRAW_HEIGHT,
@@ -77,11 +80,11 @@ def main():
         return 1
     finally:
         # Tracebacks may keep Image instances alive beyond renderer shutdown.
-        for image in (background, sprite):
+        for image in (background, sprite, book):
             if image is not None:
                 p.SDL_DestroyTexture(image.texture)
                 image.texture = None
-        background = sprite = None
+        background = sprite = book = None
         p.close_canvas()
     return 0
 
