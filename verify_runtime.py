@@ -26,7 +26,7 @@ def verify(seconds, fps, assume_focus=False):
 
     def load_asset(name):
         image = original_load(name)
-        if name == "Book_Item.png":
+        if name == main.BOOK_FILENAME:
             original_draw = image.draw
 
             def draw(*args):

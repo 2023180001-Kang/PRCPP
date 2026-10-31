@@ -257,6 +257,12 @@ class MainTests(unittest.TestCase):
         self.loader.assert_called_once_with(str(main.ASSET_DIR / "arena.png"))
         self.mocks["close_canvas"].assert_called_once()
 
+    def test_book_filename_setting_controls_loading(self):
+        with patch.object(main, "BOOK_FILENAME", "algorithm_book_pico2d_128.png"):
+            self.assertEqual(self.run_events([[], [p.Event(p.SDL_QUIT)]]), 0)
+        self.assertEqual(self.loader.call_args, call(str(main.ASSET_DIR / "algorithm_book_pico2d_128.png")))
+        self.assertEqual(self.book.draw.call_count, 3)
+
     def test_missing_book_fails_cleanly(self):
         textures = [self.background.texture, self.sprite.texture]
         output = io.StringIO()

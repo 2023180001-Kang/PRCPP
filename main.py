@@ -16,6 +16,7 @@ WINDOW_HEIGHT = 720
 TARGET_FPS = 60
 ASSET_DIR = Path(__file__).resolve().parent
 SPRITE_FILENAME = "tino_sprite_pico2d_final.png"
+BOOK_FILENAME = "Book_Item.png"
 BOOK_SIZE = 96
 
 
@@ -53,7 +54,7 @@ def main():
                 f"expected {expected_size}, got {(sprite.w, sprite.h)}"
             )
         background_scale = min(WINDOW_WIDTH / background.w, WINDOW_HEIGHT / background.h)
-        book = load_asset("Book_Item.png")
+        book = load_asset(BOOK_FILENAME)
         books = spawn_books()
         character = Character(WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2)
         controls = Controls()
